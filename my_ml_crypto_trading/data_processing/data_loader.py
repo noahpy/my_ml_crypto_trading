@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
 import pytz
 import time
-from my_ml_crypto_trading.data_retrieving.HistoricalDataRetriever import *
+from my_ml_crypto_trading.data_retrieving.HistoricalDataRetriever import HistoricalDataRetriever
 from my_ml_crypto_trading.utils import (
     convert_bybit_ob_to_snapshot,
     update_order_book,

@@ -6,7 +6,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from my_ml_crypto_trading.data_retrieving.LiveDataRetriever import LiveDataRetriever
 from matplotlib.colors import LinearSegmentedColormap
-from my_ml_crypto_trading.data_processing.data_loader import *
 from my_ml_crypto_trading.utils import convert_bybit_ob_to_snapshot
 import seaborn as sns
 import sys

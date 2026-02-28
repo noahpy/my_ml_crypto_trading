@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List, Callable
-from my_ml_crypto_trading.machine_learning.wrapper import *
+from my_ml_crypto_trading.machine_learning.processing import load_model
 from datetime import datetime, timedelta
 import torch
+import numpy as np
 
 class Strategy(ABC):
     """

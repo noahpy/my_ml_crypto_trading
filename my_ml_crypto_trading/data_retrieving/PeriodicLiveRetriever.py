@@ -8,60 +8,67 @@ import multiprocessing as mp
 import os
 
 
-def get_ob_process(key_file_path, symbol, category, ob_data_queue, rq_time_ms, limit=50):
-    ld = LiveDataRetriever(key_file_path)
+def get_ob_process(ld, symbol, category, ob_data_queue, rq_time_ms, limit=50):
     ob_data = ld.fetch_current_orderbook(symbol, category, limit=limit)
     if ob_data is not None:
-        time_passed_requesting = int(datetime.now().timestamp() * 1000) - rq_time_ms
+        time_passed_requesting = int(
+            datetime.now().timestamp() * 1000) - rq_time_ms
         ob_data_queue.put([rq_time_ms, time_passed_requesting, ob_data])
 
 
-def get_trades_process(key_file_path, symbol, category, trades_data_queue, rq_time_ms):
-    ld = LiveDataRetriever(key_file_path)
+def get_trades_process(ld, symbol, category, trades_data_queue, rq_time_ms):
     trade_data = ld.fetch_recent_trading_history(symbol, category)
     if trade_data is not None:
-        time_passed_requesting = int(datetime.now().timestamp() * 1000) - rq_time_ms
+        time_passed_requesting = int(
+            datetime.now().timestamp() * 1000) - rq_time_ms
         trades_data_queue.put([rq_time_ms, time_passed_requesting, trade_data])
 
 
-def run_spawner_process(key_file_path, update_time_interval_ms, symbol, category, 
+def run_spawner_process(key_file_path, update_time_interval_ms, symbol, category,
                         ob_data_queue, trades_data_queue, run_spawner, start_time_ms):
     """Separate function to avoid class method pickling issues"""
-    ACTIVATION_THESHHOLD_MS = 100
+    ACTIVATION_THESHHOLD_MS = 200
 
     def interpret_sigint(signum, frame):
         print("Received SIGINT at spawner process, cleaning up...")
         exit(0)
 
     signal(SIGINT, interpret_sigint)
-    
+
     print("Starting spawner process at: ", start_time_ms)
     next_time_ms = start_time_ms + update_time_interval_ms.value
 
+    ld = LiveDataRetriever(key_file_path)
     while True:
         current_time_ms = int(datetime.now().timestamp() * 1000)
         if next_time_ms - current_time_ms < ACTIVATION_THESHHOLD_MS:
             if run_spawner.value:
                 # Direct function calls instead of creating new processes
-                try:
+                # try:
                     # Get orderbook data
-                    rq_time_ms = next_time_ms
-                    ld = LiveDataRetriever(key_file_path)
-                    ob_data = ld.fetch_current_orderbook(symbol.value, category.value, limit=50)
-                    if ob_data is not None:
-                        time_passed_requesting = int(datetime.now().timestamp() * 1000) - rq_time_ms
-                        ob_data_queue.put([rq_time_ms, time_passed_requesting, ob_data])
-                    
-                    # Get trade data
-                    trade_data = ld.fetch_recent_trading_history(symbol.value, category.value)
-                    if trade_data is not None:
-                        time_passed_requesting = int(datetime.now().timestamp() * 1000) - rq_time_ms
-                        trades_data_queue.put([rq_time_ms, time_passed_requesting, trade_data])
-                except Exception as e:
-                    print(f"Error in spawner data fetch: {e}")
-                    
+                rq_time_ms = next_time_ms
+
+                ob_process = Process(
+                    target=get_ob_process,
+                    args=(ld, symbol.value, category.value,
+                          ob_data_queue, rq_time_ms, 50)
+                )
+                trades_process = Process(
+                    target=get_trades_process,
+                    args=(ld, symbol.value, category.value,
+                          trades_data_queue, rq_time_ms)
+                )
+
+                ob_process.start()
+                trades_process.start()
+
+                ob_process.join()
+                trades_process.join()
+                # except Exception as e:
+                #     print(f"Error in spawner data fetch: {e}")
+
             next_time_ms += update_time_interval_ms.value
-        
+
         # Sleep a bit to avoid high CPU usage
         time.sleep(0.01)
 
@@ -89,14 +96,11 @@ def run_digester_process(ob_data_queue, trades_data_queue, data_queue, start_tim
             while trade_data[0] < current_time_ms:
                 trade_data = trades_data_queue.get(block=True, timeout=1.0)
 
-            while trade_data[0] != ob_data[0]:
-                if trade_data[0] < ob_data[0]:
-                    trade_data = trades_data_queue.get(block=True, timeout=1.0)
-                else:
-                    ob_data = ob_data_queue.get(block=True, timeout=1.0)
+            assert trade_data[0] == ob_data[0]
 
             current_time_ms = trade_data[0]
-            current_delay = int(datetime.now().timestamp() * 1000) - current_time_ms
+            current_delay = int(datetime.now().timestamp()
+                                * 1000) - current_time_ms
 
             data = {
                 "ts": current_time_ms,
@@ -123,9 +127,10 @@ class PeriodicLiveRetriever():
                  symbol: str, category: str, start=False):
         # Make sure to set multiprocessing start method early
         self._setup_multiprocessing()
-        
+
         self.key_file_path = key_file_path
-        self.update_time_interval_ms = Value('i', int(update_time_interval.total_seconds() * 1000))
+        self.update_time_interval_ms = Value(
+            'i', int(update_time_interval.total_seconds() * 1000))
         # Use mp.Manager().Queue() instead of Queue() for better macOS compatibility
         manager = Manager()
         self.ob_data_queue = manager.Queue()
@@ -140,7 +145,7 @@ class PeriodicLiveRetriever():
         self.digester_process = None
         if start:
             self.start()
-    
+
     def _setup_multiprocessing(self):
         """Setup multiprocessing with the right context"""
         if 'fork' in mp.get_all_start_methods():
@@ -158,13 +163,13 @@ class PeriodicLiveRetriever():
 
     def start(self):
         self.run_spawner.value = True
-        
+
         # Create new processes if they don't exist or are not alive
         if self.spawner_process is None or not self.spawner_process.is_alive():
             self.spawner_process = Process(
                 target=run_spawner_process,  # Use global function instead of class method
                 args=(
-                    self.key_file_path, 
+                    self.key_file_path,
                     self.update_time_interval_ms,
                     self.symbol,
                     self.category,
@@ -176,7 +181,7 @@ class PeriodicLiveRetriever():
                 daemon=False  # Not a daemon so it can spawn processes
             )
             self.spawner_process.start()
-            
+
         if self.digester_process is None or not self.digester_process.is_alive():
             self.digester_process = Process(
                 target=run_digester_process,  # Use global function instead of class method
@@ -195,14 +200,16 @@ class PeriodicLiveRetriever():
 
     def stop(self):
         self.run_spawner.value = False
-        
+
         if self.spawner_process is not None and self.spawner_process.is_alive():
             self.spawner_process.terminate()
-            self.spawner_process.join(timeout=1.0)  # Wait for process to terminate
-            
+            # Wait for process to terminate
+            self.spawner_process.join(timeout=1.0)
+
         if self.digester_process is not None and self.digester_process.is_alive():
             self.digester_process.terminate()
-            self.digester_process.join(timeout=1.0)  # Wait for process to terminate
+            # Wait for process to terminate
+            self.digester_process.join(timeout=1.0)
 
     def __del__(self):
         print("Cleaning up PeriodicLiveRetriever...")
@@ -224,7 +231,7 @@ if __name__ == "__main__":
             try:
                 d = ld.data_queue.get(block=True, timeout=1.0)
                 print(d["ts"], d["delay_after_request"], d["delay_after_digesting"],
-                    d["ob"]["ts"], d["trades"]["list"][0]["time"])
+                      d["ob"]["ts"], d["trades"]["list"][0]["time"])
             except Exception as e:
                 # Add timeout to the queue get to avoid blocking indefinitely
                 continue

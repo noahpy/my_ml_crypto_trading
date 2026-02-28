@@ -45,4 +45,5 @@ def plot_predicted_vs_actual_midprice_interactive(file_path):
 
 # Example usage
 # Replace with your actual file path
-plot_predicted_vs_actual_midprice_interactive("prediction.data")
+if __name__ == "__main__":
+    plot_predicted_vs_actual_midprice_interactive("prediction.data")

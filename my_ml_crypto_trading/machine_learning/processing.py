@@ -140,7 +140,7 @@ def load_model(
     fc_path = f'{model_path}/input_feature_creator.pkl'
     
     # Load the model
-    model = torch.load(model_file, map_location=torch.device('cpu'))
+    model = torch.load(model_file, map_location=torch.device('cpu'), weights_only=False)
     model.eval()  # Set to evaluation mode
     
     # Load the input feature creator

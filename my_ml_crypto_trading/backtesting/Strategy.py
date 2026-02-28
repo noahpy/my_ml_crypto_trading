@@ -5,6 +5,13 @@ from datetime import datetime, timedelta
 import torch
 
 class Strategy(ABC):
+    """
+    Abstract base class for defining automated trading strategies for the backtesting engine.
+    
+    Subclasses must implement `set_up()` and `get_orders()`. Strategies interact 
+    with the `HistoricMarketSimulator` by receiving continuous market state data 
+    (order books, trades) and managing an internal or external machine learning model.
+    """
 
     @abstractmethod
     def get_orders(

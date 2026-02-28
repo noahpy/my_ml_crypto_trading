@@ -5,6 +5,15 @@ import numpy as np
 
 
 class Feature(ABC):
+    """
+    Abstract base class for defining individual features extracted from market data.
+    
+    Subclasses should implement feature extraction logic to turn raw market data 
+    (like orderbooks or raw trades) into normalized numerical values suitable for ML models.
+    
+    Example:
+        An inherited `OBFeature` class could compute things like Order Book Imbalance or Spread.
+    """
 
     @abstractmethod
     def get_min_timesteps(self) -> int:
@@ -40,6 +49,25 @@ class Feature(ABC):
         pass
 
 class FeatureCreator:
+    """
+    A pipeline class that manages a chronological buffer of data points 
+    and applies a collection of `Feature` implementations to produce final concatenated ML inputs.
+
+    Example:
+        ```python
+        from my_ml_crypto_trading.data_processing.FeatureCreation import FeatureCreator
+        from my_ml_crypto_trading.data_processing.ob_features import OBimbalance
+        
+        # Initialize with features
+        creator = FeatureCreator(features=[OBimbalance()])
+        
+        # Add new chronological market snapshots
+        creator.feed_datapoint({"bids": ..., "asks": ..., "trades": ...})
+        
+        # Output constructed ML feature array
+        features_array = creator.get_features()
+        ```
+    """
 
     def __init__(self, features: List[Feature]):
         self.features = features

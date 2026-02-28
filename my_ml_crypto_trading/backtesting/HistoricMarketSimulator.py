@@ -243,7 +243,25 @@ class PeriodicDataLoader():
 
 
 class HistoricMarketSimulator():
+    """
+    Simulates a historical trading market environment for backtesting trading strategies.
 
+    The simulator bridges historical DataRetrievers and Strategy classes, feeding data to the 
+    strategy and mocking order execution locally. It supports both market and limit orders 
+    and incorporates transaction fee estimations.
+
+    Example:
+        ```python
+        from datetime import datetime
+        from my_ml_crypto_trading.backtesting.HistoricMarketSimulator import HistoricMarketSimulator
+        from my_ml_crypto_trading.backtesting.Strategy import BaselineMidpricePredictionStrategy
+
+        # Initialize simulator
+        simulator = HistoricMarketSimulator()
+        
+        # Then, load data and run your custom backtesting loop manually utilizing methods of the Simulator.
+        ```
+    """
 
     def __init__(self):
         pass

@@ -10,8 +10,38 @@ import io
 import gzip
 
 class HistoricalDataRetriever:
+    """
+    A class to retrieve historical cryptocurrency data (orderbooks and trades) from ByCSI and Bybit.
+    
+    This class handles the downloading, extracting, and loading of historical 
+    limit order book (LOB) snapshots and trade executions for various symbols 
+    and categories (spot, linear, inverse).
+
+    Example:
+        ```python
+        from datetime import datetime
+        from my_ml_crypto_trading.data_retrieving.HistoricalDataRetriever import HistoricalDataRetriever
+        
+        # Initialize retriever with a specific download path
+        retriever = HistoricalDataRetriever(donwload_path="./my_data_folder")
+        
+        # Download orderbook data for specific day
+        retriever.fetch_historical_orderbook_day_data(
+            day=datetime(2024, 3, 14), 
+            symbol="CAKEUSDT", 
+            category="linear"
+        )
+        ```
+    """
 
     def __init__(self, donwload_path: str = ".", max_threads: int = 5):
+        """
+        Initializes the HistoricalDataRetriever.
+
+        Args:
+            donwload_path (str, optional): The base directory where downloaded data will be stored. Defaults to ".".
+            max_threads (int, optional): The maximum number of threads to use for parallel downloads. Defaults to 5.
+        """
         self.download_path = donwload_path
         if (self.download_path == ""):
             self.download_path = "."

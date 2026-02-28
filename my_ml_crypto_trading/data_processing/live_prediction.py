@@ -13,6 +13,7 @@ import math
 from scipy.stats import norm
 import numpy as np
 from tabulate import tabulate
+from datetime import timedelta
 
 
 def probability_random_achieves_accuracy(accuracy, attempts, p=0.5):
@@ -67,12 +68,12 @@ class ModelPredictionLiveTester():
 
         # Create data retriever
         self.pld = PeriodicLiveRetriever(
-            api_key_path, 1000, "CAKEUSDT", "linear")
+            api_key_path, timedelta(milliseconds=1000), "CAKEUSDT", "linear")
         self.pld.start()
 
         self.last_snapshot = None
 
-        self.model = PyTorchWrapper(model_path, model_input_len)
+        self.model = PyTorchWrapper(model_path, model_input_len, "model2.pth", "feature_creator2.pkl")
         self.model_ready = False
         self.past_midprices = []
         self.past_predictions = []
@@ -80,7 +81,8 @@ class ModelPredictionLiveTester():
 
         # Start update thread
         self.run_update_thread = True
-        self._start_update_thread()
+        # self._start_update_thread()
+        self.run_feature_update()
 
     def _start_update_thread(self):
         """Start the background thread for processing data updates"""
@@ -145,7 +147,8 @@ class ModelPredictionLiveTester():
                     if midprice_current - midprice_before < 0:
                         actual_trend = "DOWN"
 
-                    profit_step = 0
+                    sell_price = 0
+                    buy_price = 0
                     profit_string = ""
                     if actual_trend != "NEUTRAL":
                         if actual_trend == predicted_trend:
@@ -209,6 +212,8 @@ class ModelPredictionLiveTester():
             return new_trades
 
         last_timestep = self.last_snapshot["original_ts"]
+
+        # WARNING: We assume here that the we will always get all the trades relevant in one call
 
         trades_since_last_timestep = [
             trade for trade in new_trades if int(trade["time"]) > last_timestep]

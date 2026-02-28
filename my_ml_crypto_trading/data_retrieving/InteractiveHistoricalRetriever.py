@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import filedialog
 from datetime import date
-from HistoricalDataRetriever import HistoricalDataRetriever
+from my_ml_crypto_trading.data_retrieving.HistoricalDataRetriever import HistoricalDataRetriever
 import io
 import sys
 import threading

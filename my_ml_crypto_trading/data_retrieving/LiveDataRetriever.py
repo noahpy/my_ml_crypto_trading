@@ -12,17 +12,33 @@ request_count = Value('i', 0)
 WAIT_TIME_LIMIT = 0.1
 
 class LiveDataRetriever:
-    """Singleton class for fetching live data.
-       There can only exist one instace of this class per process
-       (See https://code.activestate.com/recipes/52558/).
-       Across multiple processes, the mutex and request count will be shared,
-       ensuring that the rate limit is not exceeded.
-       After usage, this class should be deleted using del ld, to ensure a
-       graceful exit.
+    """Singleton class for fetching live data from Bybit.
 
-    @params:
-        key_file_path: path to JSON key file
+    There can only exist one global instance of this class per process
+    (See https://code.activestate.com/recipes/52558/).
+    Across multiple asynchronous processes, the mutex and request count will be shared,
+    ensuring that the API rate limit is not exceeded.
+    After usage, this class should be deleted using `del ld`, to ensure a
+    graceful exit of the refresh threads.
 
+    Example:
+        ```python
+        from my_ml_crypto_trading.data_retrieving.LiveDataRetriever import LiveDataRetriever
+        
+        # Instantiate with API key config
+        ld_retriever = LiveDataRetriever("api_key.json")
+        
+        # Fetch data
+        orderbook = ld_retriever.fetch_current_orderbook("BTCUSDT", "linear")
+        print(orderbook)
+        
+        # Important: Cleanup explicitly to stop underlying threads
+        del ld_retriever
+        ```
+
+    Args:
+        key_file_path (str): Path to JSON file containing Bybit API keys.
+            The JSON file should have `api_key` and `api_secret` fields.
     """
 
     class LiveDataRetrieverImpl:

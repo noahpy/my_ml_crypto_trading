@@ -8,6 +8,7 @@ from io import StringIO
 import pandas as pd
 import io
 import gzip
+from my_ml_crypto_trading.utils import zero_pad_time
 
 class HistoricalDataRetriever:
     """
@@ -50,10 +51,7 @@ class HistoricalDataRetriever:
         self.max_threads = max_threads
 
     def zero_pad_time(self, x: int):
-        if x < 10:
-            return f"0{x}"
-        else:
-            return x
+        return zero_pad_time(x)
 
     @staticmethod
     def check_category_symbol_exists(data_type: str, symbol: str, category: str) -> bool:

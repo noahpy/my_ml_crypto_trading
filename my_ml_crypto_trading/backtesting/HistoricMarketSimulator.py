@@ -5,6 +5,7 @@ from my_ml_crypto_trading.data_retrieving.HistoricalDataRetriever import *
 import json
 import pytz
 from my_ml_crypto_trading.machine_learning.wrapper import PyTorchWrapper
+from my_ml_crypto_trading.utils import update_order_book, zero_pad_time
 
 
 class PeriodicDataLoader():
@@ -39,30 +40,7 @@ class PeriodicDataLoader():
         """
         Given a line of the historical orderbook data, update the order book.
         """
-
-        # update order book
-        if ob_type == "snapshot":
-            current_bids = new_bids
-            current_asks = new_asks
-
-        else:
-            # update bids
-            for price in new_bids:
-                if new_bids[price] == 0:
-                    if price in current_bids:
-                        del current_bids[price]
-                else:
-                    current_bids[price] = new_bids[price]
-
-            # update asks
-            for price in new_asks:
-                if new_asks[price] == 0:
-                    if price in current_asks:
-                        del current_asks[price]
-                else:
-                    current_asks[price] = new_asks[price]
-
-        return current_bids, current_asks
+        return update_order_book(current_bids, current_asks, new_bids, new_asks, ob_type)
 
     def get_ob_data(self, category, symbol, next_ts):
         """
@@ -267,40 +245,13 @@ class HistoricMarketSimulator():
         pass
 
     def zero_pad(self, x):
-        if x < 10:
-            return f"0{x}"
-        else:
-            return x
-
+        return zero_pad_time(x)
 
     def update_order_book(self, current_bids, current_asks, new_bids, new_asks, ob_type):
         """
         Given a line of the historical orderbook data, update the order book.
         """
-
-        # update order book
-        if ob_type == "snapshot":
-            current_bids = new_bids
-            current_asks = new_asks
-
-        else:
-            # update bids
-            for price in new_bids:
-                if new_bids[price] == 0:
-                    if price in current_bids:
-                        del current_bids[price]
-                else:
-                    current_bids[price] = new_bids[price]
-
-            # update asks
-            for price in new_asks:
-                if new_asks[price] == 0:
-                    if price in current_asks:
-                        del current_asks[price]
-                else:
-                    current_asks[price] = new_asks[price]
-
-        return current_bids, current_asks
+        return update_order_book(current_bids, current_asks, new_bids, new_asks, ob_type)
 
     
     def initialize_positions(self, tradable_assets):

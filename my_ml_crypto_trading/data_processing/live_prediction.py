@@ -1,6 +1,7 @@
 
 from my_ml_crypto_trading.data_retrieving.PeriodicLiveRetriever import PeriodicLiveRetriever
 from my_ml_crypto_trading.machine_learning.wrapper import PyTorchWrapper
+from my_ml_crypto_trading.utils import convert_bybit_ob_to_snapshot as _convert_snapshot
 import sys
 from typing import List
 from datetime import datetime
@@ -51,13 +52,8 @@ def probability_table_for_accuracy(accuracy, attempts, granularity=0.05):
 
 
 def convert_bybit_ob_to_snapshot(order_book):
-    """Convert order book data to snapshot format more efficiently"""
-    ts = datetime.fromtimestamp(order_book['ts'] / 1000)
-    # Use dictionary comprehension only once for each
-    bids = {float(price): float(size) for price, size in order_book['b']}
-    asks = {float(price): float(size) for price, size in order_book['a']}
-    mid_price = (min(asks.keys()) + max(bids.keys())) / 2
-    return {"ts": ts, "mid_price": mid_price, "bids": bids, "asks": asks, "original_ts": order_book['ts']}
+    """Convert order book data to snapshot format (with original_ts)."""
+    return _convert_snapshot(order_book, include_original_ts=True)
 
 
 class ModelPredictionLiveTester():

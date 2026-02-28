@@ -1,6 +1,7 @@
 
 
 from my_ml_crypto_trading.data_retrieving.PeriodicLiveRetriever import PeriodicLiveRetriever
+from my_ml_crypto_trading.utils import convert_bybit_ob_to_snapshot_raw as convert_bybit_ob_to_snapshot
 import sys
 from typing import List
 from datetime import datetime
@@ -10,15 +11,6 @@ import os
 import json
 import msgpack
 import gzip
-
-
-def convert_bybit_ob_to_snapshot(order_book):
-    """Convert order book data to snapshot format more efficiently"""
-    # Use dictionary comprehension only once for each
-    bids = {float(price): float(size) for price, size in order_book['b']}
-    asks = {float(price): float(size) for price, size in order_book['a']}
-    mid_price = (min(asks.keys()) + max(bids.keys())) / 2
-    return {"mid_price": mid_price, "bids": bids, "asks": asks, "ts": order_book['ts']}
 
 
 class LiveSnapshotDownloader():

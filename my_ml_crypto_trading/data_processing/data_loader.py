@@ -10,6 +10,11 @@ import os
 import pytz
 import time
 from my_ml_crypto_trading.data_retrieving.HistoricalDataRetriever import *
+from my_ml_crypto_trading.utils import (
+    convert_bybit_ob_to_snapshot,
+    update_order_book,
+    zero_pad_time,
+)
 
 
 class DataLoader:
@@ -18,41 +23,13 @@ class DataLoader:
         pass
 
     def zero_pad(self, x):
-        if x < 10:
-            return f"0{x}"
-        else:
-            return x
+        return zero_pad_time(x)
 
     def update_order_book(self, current_bids, current_asks, new_bids, new_asks, ob_type):
         """
         Given a line of the historical orderbook data, update the order book.
         """
-
-        # update order book
-        if ob_type == "snapshot":
-            current_bids = new_bids
-            current_asks = new_asks
-
-        else:
-            # update bids
-            for price in new_bids:
-                if new_bids[price] == 0:
-                    if price in current_bids:
-                        del current_bids[price]
-                else:
-                    current_bids[price] = new_bids[price]
-
-            # update asks
-            for price in new_asks:
-                if new_asks[price] == 0:
-                    if price in current_asks:
-                        del current_asks[price]
-                else:
-                    current_asks[price] = new_asks[price]
-
-
-
-        return current_bids, current_asks
+        return update_order_book(current_bids, current_asks, new_bids, new_asks, ob_type)
 
     def load_features_from_data(self,
                                 contract: str,
@@ -286,23 +263,3 @@ class DataLoader:
                         
         
         return np.array(feature_data)
-
-
-
-
-def convert_bybit_ob_to_snapshot(order_book):
-    """
-    This function takes a live bybit order book and converts it into a format that is better to work with
-    """
-
-    ts = datetime.fromtimestamp(order_book['ts']/1000)
-
-    # Convert bids list to dictionary with validation
-    bids = {float(price): float(size) for price, size in order_book['b']}
-
-    # Convert asks list to dictionary with validation
-    asks = {float(price): float(size) for price, size in order_book['a']}
-
-    mid_price = (min(asks.keys()) + max(bids.keys()))/2
-
-    return {"ts": ts, "mid_price": mid_price, "bids": bids, "asks": asks}
